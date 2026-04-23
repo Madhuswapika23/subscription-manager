@@ -128,4 +128,51 @@ const getMe = async (req, res) => {
   });
 };
 
-module.exports = { register, login, getMe };
+// @route   PATCH /api/auth/profile
+// @desc    Update name and/or password for the logged-in user
+// @access  Private
+const updateProfile = async (req, res) => {
+  const errors = validationResult(req);
+  if (!errors.isEmpty()) {
+    return res.status(400).json({
+      success: false,
+      message: 'Validation failed',
+      errors: errors.array().map((e) => ({ field: e.path, message: e.msg })),
+    });
+  }
+
+  try {
+    const user = await User.findById(req.user._id).select('+password');
+    if (!user) return res.status(404).json({ success: false, message: 'User not found.' });
+
+    const { name, currentPassword, newPassword } = req.body;
+
+    // Update name if provided
+    if (name && name.trim()) user.name = name.trim();
+
+    // Update password if provided
+    if (newPassword) {
+      if (!currentPassword) {
+        return res.status(400).json({ success: false, message: 'Current password is required to set a new password.' });
+      }
+      const isMatch = await user.matchPassword(currentPassword);
+      if (!isMatch) {
+        return res.status(401).json({ success: false, message: 'Current password is incorrect.' });
+      }
+      user.password = newPassword; // pre-save hook will hash it
+    }
+
+    await user.save();
+
+    res.status(200).json({
+      success: true,
+      message: 'Profile updated successfully.',
+      user: { id: user._id, name: user.name, email: user.email },
+    });
+  } catch (error) {
+    console.error('updateProfile error:', error);
+    res.status(500).json({ success: false, message: 'Server error. Please try again.' });
+  }
+};
+
+module.exports = { register, login, getMe, updateProfile };

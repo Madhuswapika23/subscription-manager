@@ -1,83 +1,81 @@
-import { NavLink, useNavigate } from 'react-router-dom';
-import { toast } from 'react-toastify';
-import { useAuth } from '../context/AuthContext';
-import {
-  LayoutDashboard, CreditCard, BarChart2, FileText,
-  Settings, Zap, LogOut, ChevronRight
-} from 'lucide-react';
+import React from 'react';
+import { NavLink } from 'react-router-dom';
+import { LayoutDashboard, Shield, PieChart, Settings } from 'lucide-react';
 
-const NAV = [
-  { to:'/dashboard',  label:'Dashboard',     icon:LayoutDashboard },
-  { to:'/analytics',  label:'Analytics',     icon:BarChart2 },
+// Only routes backed by real API endpoints
+const NAV_ITEMS = [
+  { to: '/dashboard', label: 'Dashboard', icon: LayoutDashboard },
+  { to: '/analytics', label: 'Analytics', icon: PieChart },
+  { to: '/access',    label: 'Overload',  icon: Shield },
 ];
 
-const Sidebar = ({ onAddClick }) => {
-  const { user, logout } = useAuth();
-  const navigate = useNavigate();
-  const initials = user?.name?.split(' ').map(n=>n[0]).join('').toUpperCase().slice(0,2)||'?';
-
-  const handleLogout = () => { logout(); toast.info('Signed out.'); navigate('/login',{replace:true}); };
-
+export default function Sidebar() {
   return (
-    <aside className="sidebar">
-      {/* Brand */}
-      <div className="sb-brand">
-        <div className="sb-logo">
-          <svg width="18" height="18" viewBox="0 0 24 24" fill="none">
-            <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5"
-              stroke="#fff" strokeWidth="2.2" strokeLinecap="round" strokeLinejoin="round"/>
-          </svg>
-        </div>
-        <span className="sb-name">SubTrack</span>
+    <aside style={{
+      width: '88px', minWidth: '88px',
+      background: '#FFFFFF', borderRight: '1px solid #F1F1F1',
+      display: 'flex', flexDirection: 'column', alignItems: 'center',
+      paddingTop: '28px', paddingBottom: '28px',
+      position: 'sticky', top: 0, height: '100vh', zIndex: 50, gap: 0,
+    }}>
+      {/* Logo */}
+      <div style={{
+        width: 40, height: 40,
+        background: 'linear-gradient(135deg, #A78BFA 0%, #7C3AED 100%)',
+        borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center',
+        marginBottom: 32, boxShadow: '0 4px 14px rgba(124,58,237,0.35)', flexShrink: 0,
+      }}>
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none">
+          <path d="M12 2L2 7l10 5 10-5-10-5zM2 17l10 5 10-5M2 12l10 5 10-5" stroke="#fff" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"/>
+        </svg>
       </div>
 
-      {/* Nav */}
-      <nav className="sb-nav">
-        <div className="sb-section">Main Menu</div>
-        {NAV.map(({ to, label, icon: Icon }) => (
-          <NavLink key={to} to={to} id={`nav-${label.toLowerCase()}`}
-            className={({ isActive }) => `sb-link${isActive ? ' active' : ''}`}>
-            <Icon size={17} className="sb-icon" />
-            {label}
+      {/* Separator */}
+      <div style={{ width: 32, height: 1, background: '#F0F0F0', marginBottom: 20, flexShrink: 0 }} />
+
+      {/* Nav items */}
+      <nav style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 4, width: '100%' }}>
+        {NAV_ITEMS.map(({ to, label, icon: Icon }) => (
+          <NavLink key={to} to={to} style={{ width: '100%', textDecoration: 'none' }}>
+            {({ isActive }) => (
+              <div style={{
+                position: 'relative',
+                display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                gap: 5, padding: '12px 0', cursor: 'pointer',
+                color: isActive ? '#7C3AED' : '#9CA3AF',
+              }}>
+                {isActive && (
+                  <div style={{
+                    position: 'absolute', left: 0, top: '20%', bottom: '20%',
+                    width: 3, background: '#7C3AED', borderRadius: '0 3px 3px 0',
+                  }} />
+                )}
+                <Icon size={22} strokeWidth={isActive ? 2.5 : 1.8} />
+                <span style={{ fontSize: 10, fontWeight: isActive ? 700 : 500, letterSpacing: '0.02em', color: isActive ? '#7C3AED' : '#9CA3AF' }}>
+                  {label}
+                </span>
+              </div>
+            )}
           </NavLink>
         ))}
-
-        <div className="sb-section" style={{marginTop:'8px'}}>Other</div>
-        <button className="sb-link" style={{cursor:'default',opacity:.55}} disabled>
-          <FileText size={17} className="sb-icon" /> Reports <span className="sb-badge">Soon</span>
-        </button>
-        <button className="sb-link" style={{cursor:'default',opacity:.55}} disabled>
-          <Settings size={17} className="sb-icon" /> Settings <span className="sb-badge">Soon</span>
-        </button>
-
-        {onAddClick && (
-          <button id="sidebar-add-btn" onClick={onAddClick} className="btn-primary"
-            style={{width:'100%',marginTop:'14px',justifyContent:'center',borderRadius:'12px'}}>
-            + Add Subscription
-          </button>
-        )}
       </nav>
 
-      {/* Bottom */}
-      <div className="sb-bottom">
-        <div className="sb-user" onClick={handleLogout} id="logout-btn" title="Sign out">
-          <div className="sb-avatar">{initials}</div>
-          <div style={{flex:1,minWidth:0}}>
-            <div className="sb-uname" style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{user?.name}</div>
-            <div className="sb-urole">Free plan</div>
+      {/* Settings — auth/profile, also backed by /api/auth/me */}
+      <NavLink to="/settings" style={{ width: '100%', textDecoration: 'none' }}>
+        {({ isActive }) => (
+          <div style={{
+            position: 'relative',
+            display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+            gap: 5, padding: '12px 0', cursor: 'pointer',
+          }}>
+            {isActive && (
+              <div style={{ position: 'absolute', left: 0, top: '20%', bottom: '20%', width: 3, background: '#7C3AED', borderRadius: '0 3px 3px 0' }} />
+            )}
+            <Settings size={22} strokeWidth={1.8} color={isActive ? '#7C3AED' : '#9CA3AF'} />
+            <span style={{ fontSize: 10, fontWeight: isActive ? 700 : 500, color: isActive ? '#7C3AED' : '#9CA3AF' }}>Settings</span>
           </div>
-          <LogOut size={14} style={{color:'#9CA3AF',flexShrink:0}} />
-        </div>
-
-        <div className="sb-pro">
-          <div className="sb-pro-icon">⚡</div>
-          <div className="sb-pro-title">Upgrade to Pro</div>
-          <div className="sb-pro-desc">Unlock AI insights, reports &amp; advanced analytics.</div>
-          <button className="sb-pro-btn">Upgrade Now →</button>
-        </div>
-      </div>
+        )}
+      </NavLink>
     </aside>
   );
-};
-
-export default Sidebar;
+}

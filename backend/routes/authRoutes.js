@@ -1,7 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const { body } = require('express-validator');
-const { register, login, getMe } = require('../controllers/authController');
+const { register, login, getMe, updateProfile } = require('../controllers/authController');
 const verifyToken = require('../middleware/verifyToken');
 
 // Validation rules for registration
@@ -49,5 +49,9 @@ const loginValidation = [
 router.post('/register', registerValidation, register);
 router.post('/login', loginValidation, login);
 router.get('/me', verifyToken, getMe);
+router.patch('/profile', verifyToken, [
+  body('name').optional().trim().isLength({ min: 2, max: 50 }).withMessage('Name must be 2-50 characters'),
+  body('newPassword').optional().isLength({ min: 6 }).withMessage('Password must be at least 6 characters'),
+], updateProfile);
 
 module.exports = router;
