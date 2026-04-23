@@ -198,7 +198,7 @@ export default function SettingsPage() {
                   placeholder="Repeat new password"
                   onFocus={e => Object.assign(e.target.style, inpFocus)}
                   onBlur={e => Object.assign(e.target.style, inpBlur)}
-                  style={{ ...inp, borderColor: confPw && confPw !== newPw ? '#EF4444' : undefined }}
+                  style={{ ...inp, borderColor: confPw && confPw !== newPw ? '#EF4444' : undefined, boxSizing: 'border-box' }}
                 />
               </Field>
               {confPw && confPw !== newPw && (

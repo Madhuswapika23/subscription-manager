@@ -3,18 +3,30 @@ import Layout from '../components/Layout';
 import AddSubscriptionModal from '../components/AddSubscriptionModal';
 import api from '../services/api';
 import { toast } from 'react-toastify';
-import { ChevronDown, Bookmark, LayoutGrid, Check, X, Edit2, Trash2 } from 'lucide-react';
+import { ChevronDown, Bookmark, LayoutGrid, Check, X, Edit2, Trash2, Tv2, Code2, Dumbbell, Cloud, BookOpen, Package } from 'lucide-react';
 
 /* ── helpers ─────────────────────────────────────────────────────────────── */
 const CATS = ['streaming','software','fitness','cloud','learning','other'];
 const CAT_META = {
-  streaming:{ label:'Streaming', emoji:'📺', color:'#7B5CF6', light:'#EDE9FE' },
-  software: { label:'Software',  emoji:'💻', color:'#3B82F6', light:'#DBEAFE' },
-  fitness:  { label:'Fitness',   emoji:'🏋️', color:'#10B981', light:'#D1FAE5' },
-  cloud:    { label:'Cloud',     emoji:'☁️', color:'#F59E0B', light:'#FEF3C7' },
-  learning: { label:'Learning',  emoji:'📚', color:'#EF4444', light:'#FEE2E2' },
-  other:    { label:'Other',     emoji:'📦', color:'#6B7280', light:'#F3F4F6' },
+  streaming:{ label:'Streaming', Icon: Tv2,       color:'#7B5CF6', light:'#EDE9FE' },
+  software: { label:'Software',  Icon: Code2,      color:'#3B82F6', light:'#DBEAFE' },
+  fitness:  { label:'Fitness',   Icon: Dumbbell,   color:'#10B981', light:'#D1FAE5' },
+  cloud:    { label:'Cloud',     Icon: Cloud,      color:'#F59E0B', light:'#FEF3C7' },
+  learning: { label:'Learning',  Icon: BookOpen,   color:'#EF4444', light:'#FEE2E2' },
+  other:    { label:'Other',     Icon: Package,    color:'#6B7280', light:'#F3F4F6' },
 };
+
+/* ── Category icon pill ─────────────────────────────────────────────────── */
+function CatIcon({ cat, size = 22 }) {
+  const m = CAT_META[cat];
+  if (!m) return null;
+  const { Icon, color, light } = m;
+  return (
+    <div style={{ width: size, height: size, borderRadius: 7, background: light, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }}>
+      <Icon size={size * 0.55} color={color} strokeWidth={2.2} />
+    </div>
+  );
+}
 const APP_COLORS = { dropbox:'#0061FF',zoom:'#2D8CFF',marketo:'#5C4EE5',atlassian:'#0052CC',notion:'#000',hubspot:'#FF7A59',netflix:'#E50914',spotify:'#1DB954' };
 const appColor = (name) => APP_COLORS[name?.toLowerCase()] || '#7B5CF6';
 const fmt  = n => '₹' + new Intl.NumberFormat('en-IN', { maximumFractionDigits: 0 }).format(Math.round(n || 0));
@@ -147,7 +159,7 @@ export default function AccessPage() {
             <h1 style={{ fontSize:26, fontWeight:800, color:'#111827', margin:'0 0 4px 0' }}>Overload Control</h1>
             <p style={{ fontSize:13, color:'#9CA3AF', fontWeight:500, margin:'0 0 22px 0' }}>Monitor spending across categories and flag subscriptions to cut.</p>
 
-            {/* ── Budget bar segments (like the role bars in the reference) ── */}
+            {/* ── Budget bar segments ── */}
             <div style={{ display:'flex', gap:4, height:40, marginBottom:14 }}>
               {CATS.map(cat => {
                 const budget = budgets[cat]||0;
@@ -166,35 +178,61 @@ export default function AccessPage() {
               })}
             </div>
 
-            {/* Legend */}
-            <div style={{ display:'flex', gap:20, flexWrap:'wrap', marginBottom:24 }}>
+            {/* ── Category spend-vs-budget mini chart grid ── */}
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(3,1fr)', gap:'10px 14px', marginBottom:24 }}>
               {CATS.map(cat => {
-                const spend = catSpend[cat]||0;
-                const budget = budgets[cat]||0;
-                const over = spend > budget && budget > 0;
+                const spend  = catSpend[cat] || 0;
+                const budget = budgets[cat]  || 0;
+                const over   = spend > budget && budget > 0;
+                const pct    = budget > 0 ? Math.min(100, Math.round((spend / budget) * 100)) : 0;
                 const isEditing = editingBudget === cat;
+                const { color, light, label } = CAT_META[cat];
                 return (
-                  <div key={cat}>
-                    <div style={{ display:'flex', alignItems:'center', gap:5 }}>
-                      <div style={{ width:8, height:8, borderRadius:2, background:CAT_META[cat].color, flexShrink:0 }} />
-                      <span style={{ fontSize:12, fontWeight:700, color:over?'#EF4444':'#111827' }}>{CAT_META[cat].label}</span>
-                    </div>
-                    {isEditing ? (
-                      <div style={{ display:'flex', alignItems:'center', gap:4, marginTop:3 }}>
-                        <input
-                          autoFocus type="number" value={tempBudget}
-                          onChange={e => setTempBudget(e.target.value)}
-                          onKeyDown={e => { if(e.key==='Enter') saveBudget(cat,tempBudget); if(e.key==='Escape') setEditingBudget(null); }}
-                          style={{ width:52, border:'1.5px solid #7B5CF6', borderRadius:6, padding:'2px 6px', fontSize:11, fontWeight:700, outline:'none' }}
-                        />
-                        <button onClick={() => saveBudget(cat,tempBudget)} style={{ border:'none', background:'#7B5CF6', color:'#fff', borderRadius:5, padding:'2px 7px', fontSize:10, fontWeight:700, cursor:'pointer' }}>✓</button>
+                  <div key={cat} style={{ background:'#FAFAFA', borderRadius:12, padding:'10px 12px', border:`1px solid ${over ? '#FECACA' : '#F3F4F6'}` }}>
+                    {/* Header row */}
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:7 }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:6 }}>
+                        <CatIcon cat={cat} size={24} />
+                        <span style={{ fontSize:11, fontWeight:700, color: over ? '#EF4444' : '#111827' }}>{label}</span>
                       </div>
-                    ) : (
-                      <button onClick={() => { setEditingBudget(cat); setTempBudget(budgets[cat]||''); }}
-                        style={{ fontSize:11, color:'#9CA3AF', fontWeight:500, background:'none', border:'none', padding:'2px 0', cursor:'pointer', display:'block', textAlign:'left' }}>
-                        {budget>0 ? `${fmt(budget)}/mo budget` : 'Set budget'}
-                      </button>
-                    )}
+                      {over && <span style={{ fontSize:9, fontWeight:800, color:'#EF4444', background:'#FEE2E2', borderRadius:4, padding:'2px 6px' }}>OVER</span>}
+                    </div>
+
+                    {/* Mini bar graph: spend vs budget */}
+                    <div style={{ position:'relative', height:6, background:'#E9E9F0', borderRadius:99, overflow:'hidden', marginBottom:6 }}>
+                      <div style={{
+                        position:'absolute', left:0, top:0, height:'100%',
+                        width:`${pct}%`,
+                        background: over
+                          ? 'linear-gradient(90deg,#F87171,#EF4444)'
+                          : `linear-gradient(90deg,${color}99,${color})`,
+                        borderRadius:99,
+                        transition:'width .4s ease',
+                      }} />
+                    </div>
+
+                    {/* Values row */}
+                    <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center' }}>
+                      <span style={{ fontSize:10, fontWeight:700, color: over ? '#EF4444' : color }}>{fmt(spend)}</span>
+                      {isEditing ? (
+                        <div style={{ display:'flex', alignItems:'center', gap:3 }}>
+                          <input
+                            autoFocus type="number" value={tempBudget}
+                            onChange={e => setTempBudget(e.target.value)}
+                            onKeyDown={e => { if(e.key==='Enter') saveBudget(cat,tempBudget); if(e.key==='Escape') setEditingBudget(null); }}
+                            style={{ width:46, border:`1.5px solid ${color}`, borderRadius:5, padding:'2px 5px', fontSize:10, fontWeight:700, outline:'none', textAlign:'right' }}
+                          />
+                          <button onClick={() => saveBudget(cat,tempBudget)} style={{ border:'none', background:color, color:'#fff', borderRadius:5, padding:'2px 6px', fontSize:9, fontWeight:800, cursor:'pointer' }}>✓</button>
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => { setEditingBudget(cat); setTempBudget(budgets[cat]||''); }}
+                          style={{ fontSize:9, color:'#9CA3AF', fontWeight:600, background:'none', border:'none', padding:0, cursor:'pointer' }}
+                        >
+                          {budget > 0 ? `/ ${fmt(budget)}` : '+ Set limit'}
+                        </button>
+                      )}
+                    </div>
                   </div>
                 );
               })}

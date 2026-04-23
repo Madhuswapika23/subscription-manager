@@ -107,55 +107,80 @@ function FreqBadge({ cycle }) {
   );
 }
 
-/* ─── Bar Chart ─────────────────────────────────────────────────────────────── */
-function HeroBarChart({ bars }) {
+/* ── Category colours ───────────────────────────────────────────────────── */
+const CATS = ['streaming','software','fitness','cloud','learning','other'];
+const CAT_META = {
+  streaming: { label:'Streaming', color:'#7B5CF6' },
+  software:  { label:'Software',  color:'#3B82F6' },
+  fitness:   { label:'Fitness',   color:'#10B981' },
+  cloud:     { label:'Cloud',     color:'#F59E0B' },
+  learning:  { label:'Learning',  color:'#EF4444' },
+  other:     { label:'Other',     color:'#6B7280' },
+};
+const DEFAULT_BUDGETS = { streaming:500, software:1000, fitness:500, cloud:800, learning:400, other:600 };
+
+/* ── 6-bar category chart ────────────────────────────────────────────── */
+function CategoryBarChart({ catSpend, budgets, maxH = 180 }) {
+  const [hovered, setHovered] = React.useState(null);
+  const maxSpend = Math.max(...CATS.map(c => Math.max(catSpend[c] || 0, budgets[c] || 0)), 1);
+
   return (
-    <div style={{
-      display: 'flex', alignItems: 'flex-end',
-      gap: 24, height: 200,
-      padding: '0 0 0 4px',
-    }}>
-      {bars.map((bar, i) => {
-        const maxH = 200;
-        const h1 = Math.round(maxH * bar.ratio1);
-        const h2 = Math.round(maxH * bar.ratio2);
+    <div style={{ display:'flex', alignItems:'flex-end', gap:14, height: maxH + 40, padding:'0 4px', position:'relative' }}>
+      {CATS.map(cat => {
+        const spend  = catSpend[cat] || 0;
+        const budget = budgets[cat]  || 0;
+        const barH   = Math.round(maxH * (spend / maxSpend));
+        const budgetH = budget > 0 ? Math.round(maxH * (budget / maxSpend)) : null;
+        const over   = spend > budget && budget > 0;
+        const { color, label } = CAT_META[cat];
+        const isHov  = hovered === cat;
+
         return (
-          <div key={i} style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
-            {/* Bar group */}
-            <div style={{ display: 'flex', alignItems: 'flex-end', gap: 6, height: maxH, marginBottom: 10 }}>
-              {/* Back bar (2023 – semi-transparent) */}
-              <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center' }}>
-                <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: 11, fontWeight: 700, marginBottom: 6, whiteSpace: 'nowrap' }}>
-                  {bar.label1}
-                </span>
-                <div style={{
-                  width: 38, height: h1,
-                  background: 'linear-gradient(180deg, rgba(255,255,255,0.30) 0%, rgba(255,255,255,0.10) 100%)',
-                  borderRadius: '8px 8px 0 0',
-                  backdropFilter: 'blur(4px)',
-                }} />
-              </div>
-              {/* Front bar (2024 – bright white) */}
-              <div style={{ position: 'relative', display: 'flex', flexDirection: 'column', justifyContent: 'flex-start', alignItems: 'center' }}>
-                <span style={{ color: 'rgba(255,255,255,0.9)', fontSize: 11, fontWeight: 700, marginBottom: 6, whiteSpace: 'nowrap' }}>
-                  {bar.label2}
-                </span>
-                <div style={{
-                  width: 38, height: h2,
-                  background: 'linear-gradient(180deg, rgba(255,255,255,0.95) 0%, rgba(200,180,255,0.7) 100%)',
-                  borderRadius: '8px 8px 0 0',
-                  boxShadow: '0 -4px 16px rgba(255,255,255,0.25)',
-                }} />
-              </div>
+          <div
+            key={cat}
+            style={{ flex:1, display:'flex', flexDirection:'column', alignItems:'center', cursor:'pointer' }}
+            onMouseEnter={() => setHovered(cat)}
+            onMouseLeave={() => setHovered(null)}
+          >
+            {/* Tooltip */}
+            <div style={{ marginBottom:6, minHeight:36, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'flex-end' }}>
+              {isHov && (
+                <div style={{ background:'rgba(255,255,255,0.95)', color:'#111827', borderRadius:10, padding:'6px 10px', fontSize:10, fontWeight:700, whiteSpace:'nowrap', boxShadow:'0 4px 16px rgba(0,0,0,0.15)', textAlign:'center' }}>
+                  <div style={{ color, marginBottom:2 }}>{label}</div>
+                  <div>₹{Math.round(spend)}/mo</div>
+                  {budget > 0 && <div style={{ color: over?'#EF4444':'#10B981', fontSize:9, marginTop:1 }}>{over?'over':'within'} budget</div>}
+                </div>
+              )}
             </div>
-            {/* Q label */}
-            <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: 12, fontWeight: 600 }}>{bar.q}</span>
+            {/* Bar column */}
+            <div style={{ position:'relative', width:'100%', height: maxH, display:'flex', alignItems:'flex-end' }}>
+              {/* Budget dashed line */}
+              {budgetH !== null && (
+                <div style={{ position:'absolute', left:0, right:0, bottom: budgetH, borderTop:'2px dashed rgba(255,255,255,0.5)', zIndex:2, transition:'bottom 0.5s ease' }} />
+              )}
+              {/* Bar */}
+              <div style={{
+                width:'100%',
+                height: Math.max(barH, spend > 0 ? 4 : 0),
+                background: over
+                  ? 'linear-gradient(180deg,#F87171 0%,#EF4444 100%)'
+                  : `linear-gradient(180deg,rgba(255,255,255,0.85) 0%,rgba(255,255,255,${isHov?'0.55':'0.35'}) 100%)`,
+                borderRadius:'8px 8px 0 0',
+                transition:'height 0.5s cubic-bezier(0.4,0,0.2,1)',
+                opacity: spend === 0 ? 0.3 : 1,
+                boxShadow: isHov ? '0 -4px 16px rgba(255,255,255,0.3)' : 'none',
+              }} />
+            </div>
+            <span style={{ color:'rgba(255,255,255,0.65)', fontSize:9, fontWeight:600, marginTop:8, textAlign:'center', lineHeight:1.2 }}>
+              {label}
+            </span>
           </div>
         );
       })}
     </div>
   );
 }
+
 
 /* ─── Main Page ─────────────────────────────────────────────────────────────── */
 export default function DashboardPage() {
@@ -202,9 +227,20 @@ export default function DashboardPage() {
 
   const toMonthly = s => s.billingCycle === 'yearly' ? s.cost / 12 : s.billingCycle === 'weekly' ? s.cost * 4.33 : s.cost;
 
-  const activeSubs = subscriptions.filter(s => s.status === 'active');
+  const activeSubs   = subscriptions.filter(s => s.status === 'active');
   const totalMonthly = activeSubs.reduce((acc, s) => acc + toMonthly(s), 0);
-  const totalYearly = activeSubs.reduce((acc, s) => acc + (s.billingCycle === 'yearly' ? s.cost : s.cost * 12), 0);
+  const totalYearly  = activeSubs.reduce((acc, s) => acc + (s.billingCycle === 'yearly' ? s.cost : s.cost * 12), 0);
+
+  // Category spend (monthly)
+  const catSpend = {};
+  CATS.forEach(c => { catSpend[c] = 0; });
+  activeSubs.forEach(s => { catSpend[s.category || 'other'] += toMonthly(s); });
+
+  // Budgets from localStorage (same key as AccessPage + SettingsPage write to)
+  const budgets = (() => {
+    try { const s = localStorage.getItem('subtrack_budgets'); return s ? JSON.parse(s) : DEFAULT_BUDGETS; }
+    catch { return DEFAULT_BUDGETS; }
+  })();
 
   // Left to pay = upcoming renewal amounts this month
   const upcomingThisMonth = subscriptions.filter(s => {
@@ -213,16 +249,8 @@ export default function DashboardPage() {
   });
   const leftToPay = upcomingThisMonth.reduce((acc, s) => acc + s.cost, 0);
 
-  // (fmt and fmtShort are defined at module level — ₹ INR × 90)
 
-  // Dynamic bar chart — divide spend across 4 quarters with realistic distribution
-  const qBase = totalYearly / 4;
-  const barData = [
-    { q: 'Q1', label1: fmt(qBase * 1.08), label2: fmt(qBase * 0.88), ratio1: 0.78, ratio2: 0.52 },
-    { q: 'Q2', label1: fmt(qBase * 0.98), label2: fmt(qBase * 0.79), ratio1: 0.67, ratio2: 0.46 },
-    { q: 'Q3', label1: fmt(qBase * 0.93), label2: fmt(qBase * 0.74), ratio1: 0.62, ratio2: 0.42 },
-    { q: 'Q4', label1: fmt(qBase * 0.88), label2: fmt(qBase * 0.70), ratio1: 0.56, ratio2: 0.37 },
-  ];
+
 
   // Upcoming payment rows (sort by renewal date, limit 5)
   const upcomingRows = [...subscriptions]
@@ -333,7 +361,7 @@ export default function DashboardPage() {
             {loading ? (
               <div style={{ height: 200, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'rgba(255,255,255,0.5)', fontSize: 14 }}>Loading...</div>
             ) : (
-              <HeroBarChart bars={barData} />
+              <CategoryBarChart catSpend={catSpend} budgets={budgets} maxH={180} />
             )}
           </div>
         </div>
