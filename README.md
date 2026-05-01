@@ -212,7 +212,3 @@ We welcome contributions! To contribute:
 - **Advanced Filtering & Export:** Allow users to export their subscription data to CSV or PDF.
 - **Automated Testing Suite:** Introduce Jest for backend coverage and Cypress for end-to-end frontend testing.
 
----
-
-## 13. License
-This project is open-source and available under the [MIT License](LICENSE).
